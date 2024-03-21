@@ -19,10 +19,10 @@ resource "aws_dynamodb_table" "table" {
       projection_type    = global_secondary_index.value.projection_type
       non_key_attributes = global_secondary_index.value.non_key_attributes
 
-      // Read and Write capacity units need to be specified here if your table's billing_mode is PROVISIONED
-      // Otherwise, these should be omitted for PAY_PER_REQUEST
-      read_capacity  = global_secondary_index.value.read_capacity
-      write_capacity = global_secondary_index.value.write_capacity
+      # Read and Write capacity units need to be specified here if your table's billing_mode is PROVISIONED
+      # Otherwise, these should be omitted for PAY_PER_REQUEST
+      # read_capacity  = global_secondary_index.value.read_capacity
+      # write_capacity = global_secondary_index.value.write_capacity
     }
   }
 }
