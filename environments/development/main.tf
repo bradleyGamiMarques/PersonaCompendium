@@ -2,7 +2,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "5.41.0"
+      version = "5.43.0"
     }
   }
 }
@@ -33,77 +33,12 @@ module "persona_3_reload_personas_table" {
       name = "PersonaName"
       type = "S"
     },
-    {
-      name = "Strength"
-      type = "N"
-    },
-    {
-      name = "Magic"
-      type = "N"
-    },
-    {
-      name = "Endurance"
-      type = "N"
-    },
-    {
-      name = "Agility"
-      type = "N"
-    },
-    {
-      name = "Luck"
-      type = "N"
-    }
   ]
   global_secondary_indexes = [
     {
       name               = "PersonaIndex"
       hash_key           = "PersonaName"
       range_key          = null
-      projection_type    = "ALL"
-      non_key_attributes = []
-      read_capacity      = null
-      write_capacity     = null
-    },
-    {
-      name               = "StrengthIndex"
-      hash_key           = "Strength"
-      range_key          = "PersonaLevel"
-      projection_type    = "ALL"
-      non_key_attributes = []
-      read_capacity      = null
-      write_capacity     = null
-    },
-    {
-      name               = "MagicIndex"
-      hash_key           = "Magic"
-      range_key          = "PersonaLevel"
-      projection_type    = "ALL"
-      non_key_attributes = []
-      read_capacity      = null
-      write_capacity     = null
-    },
-    {
-      name               = "EnduranceIndex"
-      hash_key           = "Endurance"
-      range_key          = "PersonaLevel"
-      projection_type    = "ALL"
-      non_key_attributes = []
-      read_capacity      = null
-      write_capacity     = null
-    },
-    {
-      name               = "AgilityIndex"
-      hash_key           = "Agility"
-      range_key          = "PersonaLevel"
-      projection_type    = "ALL"
-      non_key_attributes = []
-      read_capacity      = null
-      write_capacity     = null
-    },
-    {
-      name               = "LuckIndex"
-      hash_key           = "Luck"
-      range_key          = "PersonaLevel"
       projection_type    = "ALL"
       non_key_attributes = []
       read_capacity      = null
