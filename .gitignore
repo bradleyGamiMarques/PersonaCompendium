@@ -32,3 +32,6 @@ override.tf.json
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
+
+# Ignore backend-config.hcl files as these can contain sensitive information
+*backend-config.hcl
