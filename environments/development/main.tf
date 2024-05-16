@@ -2,14 +2,19 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "5.43.0"
+      version = "5.47.0"
     }
   }
 }
 
+terraform {
+  backend "s3" {}
+}
+
 provider "aws" {
-  profile = "bradley-marques-developer"
-  region  = "us-west-1"
+  access_key = var.aws_access_key
+  secret_key = var.aws_secret_key
+  region     = var.aws_region
 }
 
 module "persona_3_reload_personas_table" {
@@ -202,4 +207,21 @@ module "persona_3_reload_persona_inherits_table" {
       type = "S"
     }
   ]
+}
+
+resource "aws_iam_role" "lambda_execution_role" {
+  name = "lambda_execution_role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+      },
+    ]
+  })
 }
