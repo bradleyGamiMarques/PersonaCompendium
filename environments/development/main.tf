@@ -17,6 +17,8 @@ provider "aws" {
   region     = var.aws_region
 }
 
+data "aws_caller_identity" "current" {}
+
 module "persona_3_reload_personas_table" {
   source         = "../../modules/dynamodb_table"
   table_name     = "p3r_personas_dev"
