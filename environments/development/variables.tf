@@ -25,3 +25,8 @@ variable "key" {
   description = "Path to .tfstate file in S3"
   type        = string
 }
+
+variable "stage" {
+  description = "Deployment environment stage"
+  type        = string
+}

@@ -31,3 +31,19 @@ output "key" {
   description = "Path to .tfstate file in S3"
   value       = var.key
 }
+
+output "rest_api_id" {
+  value = aws_api_gateway_rest_api.persona_compendium.id
+}
+
+output "api_gateway_root_resource_id" {
+  value = aws_api_gateway_rest_api.persona_compendium.root_resource_id
+}
+
+output "api_gateway_execution_arn" {
+  value = aws_api_gateway_rest_api.persona_compendium.execution_arn
+}
+
+output "api_gateway_cloudwatch_role_arn" {
+  value = aws_iam_role.api_gateway_cloudwatch_role.arn
+}
