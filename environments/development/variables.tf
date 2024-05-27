@@ -30,3 +30,23 @@ variable "stage" {
   description = "Deployment environment stage"
   type        = string
 }
+
+variable "api_gateway_configuration_file" {
+  description = "Path to the API Gateway configuration file"
+  default     = "./api_gateway/main.tf"
+}
+
+variable "api_gateway_resources_file" {
+  description = "Path to the API Gateway resources configuration file"
+  default     = "./api_gateway/resources/main.tf"
+}
+
+variable "api_gateway_methods_file" {
+  description = "Path to the API Gateway methods configuration file"
+  default     = "./api_gateway/methods/main.tf"
+}
+
+variable "api_gateway_integrations_file" {
+  description = "Path to the API Gateway integrations configuration file"
+  default     = "./api_gateway/integrations/main.tf"
+}
