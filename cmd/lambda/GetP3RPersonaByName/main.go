@@ -54,7 +54,7 @@ func sanitizeInput(input string) (string, error) {
 	// Trim leading and trailing spaces
 	trimmedInput := strings.TrimSpace(input)
 	// Disallowing special characters except for hyphens, letters, and spaces
-	re := regexp.MustCompile(`^[-a-zA-Zè ]+$`)
+	re := regexp.MustCompile(`^[-a-zA-Zè ]*(-P5)?$`)
 	if !re.MatchString(trimmedInput) {
 		return "", fmt.Errorf("invalid input: %s", input)
 	}
