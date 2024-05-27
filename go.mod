@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.13.19
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.32.5
 	github.com/bradleyGamiMarques/PersonaCompendiumErrors v0.1.4
-	github.com/bradleyGamiMarques/get-persona-service-types v1.2.0
+	github.com/bradleyGamiMarques/get-persona-service-types v1.2.1
 )
 
 require (

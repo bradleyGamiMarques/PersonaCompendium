@@ -144,7 +144,7 @@ func HandleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 
 	var response GetPersonaServiceTypes.GetP3RPersonasByArcanaResponse
 	for _, persona := range result.Items {
-		var item GetPersonaServiceTypes.GetP3RPersonaByNameResponse
+		var item GetPersonaServiceTypes.P3RPersona
 		err = attributevalue.UnmarshalMap(persona, &item)
 		if err != nil {
 			log.Printf("Error: failed to unmarshal response: %v", err)
