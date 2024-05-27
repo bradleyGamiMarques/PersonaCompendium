@@ -33,5 +33,14 @@ override.tf.json
 .terraformrc
 terraform.rc
 
+# Go workspace file
+go.work
+
 # Ignore backend-config.hcl files as these can contain sensitive information
 *backend-config.hcl
+
+# Ignore compiled zip binaries
+*.zip
+
+# Ignore compiled binaries
+bootstrap
