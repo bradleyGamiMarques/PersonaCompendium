@@ -1,0 +1,29 @@
+# More information about the configuration file can be found here:
+# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-config.html
+version = 0.1
+
+[sandbox.global.parameters]
+stack_name = "persona-compendium-sandbox"
+region = "us-west-1"
+profile = "bradley_marques_sandbox_developer"
+
+[sandbox.build.parameters]
+cached = true
+parallel = true
+
+[sandbox.deploy.parameters]
+capabilities = "CAPABILITY_IAM"
+resolve_s3 = true
+confirm_changeset = false
+no_fail_on_empty_changeset = true
+s3_prefix = "persona-compendium-sandbox-deployment-bucket"
+parameter_overrides = [
+  "Environment=sandbox",
+  "P3RPersonasTableName=persona_3_reload_personas_sandbox"
+]
+
+[default.local_start_api.parameters]
+warm_containers = "EAGER"
+
+[default.local_start_lambda.parameters]
+warm_containers = "EAGER"

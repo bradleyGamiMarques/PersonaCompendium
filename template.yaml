@@ -1,0 +1,105 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: persona-compendium API
+
+Globals:
+  Function:
+    Runtime: provided.al2023
+    Architectures:
+      - arm64
+    Timeout: 5
+    LoggingConfig:
+      LogFormat: JSON
+      ApplicationLogLevel: INFO
+
+Parameters:
+  P3RPersonasTableName:
+    Type: String
+    Description: Name of the DynamoDB table
+
+  Environment:
+    Type: String
+    Default: sandbox
+    AllowedValues:
+      - sandbox
+      - dev
+      - staging
+      - prod
+    Description: Environment name to scope resource names and policies
+
+Resources:
+  GetP3RPersonas:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      FunctionName: !Sub GetP3RPersonas-${Environment}
+      CodeUri: .aws-sam/build/GetP3RPersonas/
+      Handler: bootstrap
+      Role: !GetAtt GetP3RPersonasExecutionRole.Arn
+      Environment:
+        Variables:
+          DYNAMODB_TABLE_NAME: !Ref P3RPersonasTableName
+      Events:
+        GetP3RPersonasAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PersonaCompendiumApi
+            Path: /p3r-personas
+            Method: POST
+
+  GetP3RPersonasExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub persona-compendium-${Environment}-GetP3RPersonas-ExecRole
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub persona-compendium-${Environment}-DynamoDBQuery-GetP3RPersonas
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:Query
+                Resource:
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${P3RPersonasTableName}
+        - PolicyName: !Sub persona-compendium-${Environment}-Logs-GetP3RPersonas
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !GetAtt GetP3RPersonasLogGroup.Arn
+
+  GetP3RPersonasLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/persona-compendium-${Environment}-GetP3RPersonas
+      RetentionInDays: 14
+  PersonaCompendiumApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub persona-compendium-${Environment}-api
+      StageName: !Ref Environment
+      EndpointConfiguration: REGIONAL
+
+Outputs:
+  GetP3RPersonasApiUrl:
+    Description: Invoke URL for /p3r-personas endpoint
+    Value: !Sub "https://${PersonaCompendiumApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/p3r-personas"
+
+  GetP3RPersonasFunctionArn:
+    Description: ARN of the GetP3RPersonas Lambda function
+    Value: !GetAtt GetP3RPersonas.Arn
+
+  GetP3RPersonasExecutionRoleArn:
+    Description: IAM Role for the GetP3RPersonas Lambda
+    Value: !GetAtt GetP3RPersonasExecutionRole.Arn
