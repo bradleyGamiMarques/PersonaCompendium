@@ -47,6 +47,8 @@ Resources:
             RestApiId: !Ref PersonaCompendiumApi
             Path: /p3r-personas
             Method: POST
+    DependsOn:
+      - GetP3RPersonasLogGroup
 
   GetP3RPersonasExecutionRole:
     Type: AWS::IAM::Role
@@ -82,7 +84,7 @@ Resources:
   GetP3RPersonasLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/lambda/persona-compendium-${Environment}-GetP3RPersonas
+      LogGroupName: !Sub /aws/lambda/GetP3RPersonas-${Environment}
       RetentionInDays: 14
   PersonaCompendiumApi:
     Type: AWS::Serverless::Api
