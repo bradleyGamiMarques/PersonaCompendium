@@ -101,6 +101,14 @@ func fetchPersonasByArcana(ctx context.Context, arcanas []string) map[string][]G
 }
 
 func flattenGroupedPersonas(grouped map[string][]GetPersonaServiceTypes.P3RPersonaListItem) []GetPersonaServiceTypes.P3RPersonaListItem {
+	// Step 1: Calculate total capacity needed
+        total := 0
+	for _, personas := range grouped {
+		total += len(personas)
+	}
+
+	// Step 2: Preallocate the slice with total capacity
+	flattened := make([]GetPersonaServiceTypes.P3RPersonaListItem, 0, total)
 	var flattened []GetPersonaServiceTypes.P3RPersonaListItem
 	for _, arcana := range majorArcanaOrder {
 		flattened = append(flattened, grouped[arcana]...)
