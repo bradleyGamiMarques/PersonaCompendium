@@ -71,6 +71,7 @@ func fetchPersonasByArcana(ctx context.Context, arcanas []string) map[string][]G
 					":hk": &types.AttributeValueMemberS{Value: arcana},
 				},
 				ProjectionExpression: aws.String("Arcana, PersonaLevel, PersonaName, IsDLC"),
+				ScanIndexForward:     aws.Bool(false),
 			}
 
 			result, err := svc.Query(ctx, input)
