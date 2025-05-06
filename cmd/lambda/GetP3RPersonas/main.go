@@ -19,6 +19,11 @@ import (
 	GetPersonaServiceTypes "github.com/bradleyGamiMarques/get-persona-service-types"
 )
 
+type GroupedPersonas struct {
+	Groups     map[string][]GetPersonaServiceTypes.P3RPersonaListItem
+	TotalCount int
+}
+
 var (
 	svc       *dynamodb.Client
 	tableName string
@@ -50,12 +55,13 @@ func initAWS(ctx context.Context) error {
 	return nil
 }
 
-func fetchPersonasByArcana(ctx context.Context, arcanas []string) map[string][]GetPersonaServiceTypes.P3RPersonaListItem {
+func fetchPersonasByArcana(ctx context.Context, arcanas []string) GroupedPersonas {
 	grouped := make(map[string][]GetPersonaServiceTypes.P3RPersonaListItem, len(majorArcanaOrder))
 	for _, arcana := range majorArcanaOrder {
 		grouped[arcana] = []GetPersonaServiceTypes.P3RPersonaListItem{}
 	}
 
+	var totalCount int
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 
@@ -92,26 +98,22 @@ func fetchPersonasByArcana(ctx context.Context, arcanas []string) map[string][]G
 
 			mu.Lock()
 			grouped[arcana] = personas
+			totalCount += len(personas)
 			mu.Unlock()
 		}(arcana)
 	}
 
 	wg.Wait()
-	return grouped
+	return GroupedPersonas{
+		Groups:     grouped,
+		TotalCount: totalCount,
+	}
 }
 
-func flattenGroupedPersonas(grouped map[string][]GetPersonaServiceTypes.P3RPersonaListItem) []GetPersonaServiceTypes.P3RPersonaListItem {
-	// Step 1: Calculate total capacity needed
-        total := 0
-	for _, personas := range grouped {
-		total += len(personas)
-	}
-
-	// Step 2: Preallocate the slice with total capacity
-	flattened := make([]GetPersonaServiceTypes.P3RPersonaListItem, 0, total)
-	var flattened []GetPersonaServiceTypes.P3RPersonaListItem
+func flattenGroupedPersonas(data GroupedPersonas) []GetPersonaServiceTypes.P3RPersonaListItem {
+	flattened := make([]GetPersonaServiceTypes.P3RPersonaListItem, 0, data.TotalCount)
 	for _, arcana := range majorArcanaOrder {
-		flattened = append(flattened, grouped[arcana]...)
+		flattened = append(flattened, data.Groups[arcana]...)
 	}
 	return flattened
 }
@@ -139,8 +141,8 @@ func Handle(ctx context.Context, request events.APIGatewayProxyRequest) (events.
 		return GetPersonaCompendiumErrors.JSONResponse(errorResponse)
 	}
 
-	grouped := fetchPersonasByArcana(ctx, inputBody.Arcanas)
-	orderedResponse := flattenGroupedPersonas(grouped)
+	groupedData := fetchPersonasByArcana(ctx, inputBody.Arcanas)
+	orderedResponse := flattenGroupedPersonas(groupedData)
 
 	responseBody, err := json.Marshal(orderedResponse)
 	if err != nil {
