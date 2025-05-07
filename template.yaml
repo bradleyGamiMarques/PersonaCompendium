@@ -37,6 +37,11 @@ Resources:
       CodeUri: .aws-sam/build/GetP3RPersonas/
       Handler: bootstrap
       Role: !GetAtt GetP3RPersonasExecutionRole.Arn
+      Tracing: Active
+      Policies:
+        - CloudWatchLambdaInsightsExecutionRolePolicy
+      Layers:
+        - !Sub "arn:aws:lambda:${AWS::Region}:580247275435:layer:LambdaInsightsExtension-Arm64:21"
       Environment:
         Variables:
           DYNAMODB_TABLE_NAME: !Ref P3RPersonasTableName
@@ -71,16 +76,9 @@ Resources:
                   - dynamodb:Query
                 Resource:
                   - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${P3RPersonasTableName}
-        - PolicyName: !Sub persona-compendium-${Environment}-Logs-GetP3RPersonas
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - logs:CreateLogStream
-                  - logs:PutLogEvents
-                Resource: !GetAtt GetP3RPersonasLogGroup.Arn
-
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+        - arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy
   GetP3RPersonasLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -92,6 +90,7 @@ Resources:
       Name: !Sub persona-compendium-${Environment}-api
       StageName: !Ref Environment
       EndpointConfiguration: REGIONAL
+      TracingEnabled: true
 
 Outputs:
   GetP3RPersonasApiUrl:
