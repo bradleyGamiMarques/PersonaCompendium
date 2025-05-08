@@ -37,6 +37,7 @@ Resources:
       CodeUri: .aws-sam/build/GetP3RPersonas/
       Handler: bootstrap
       Role: !GetAtt GetP3RPersonasExecutionRole.Arn
+      MemorySize: 512
       Tracing: Active
       Policies:
         - CloudWatchLambdaInsightsExecutionRolePolicy
