@@ -44,7 +44,7 @@ Resources:
         - !Sub "arn:aws:lambda:${AWS::Region}:580247275435:layer:LambdaInsightsExtension-Arm64:21"
       Environment:
         Variables:
-          DYNAMODB_TABLE_NAME: !Ref P3RPersonasTableName
+          DYNAMODB_TABLE_NAME: !Ref P3RPersonasTable
       Events:
         GetP3RPersonasAPI:
           Type: Api
@@ -75,7 +75,17 @@ Resources:
                 Action:
                   - dynamodb:Query
                 Resource:
-                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${P3RPersonasTableName}
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${P3RPersonasTable}
+        - PolicyName: !Sub persona-compendium-${Environment}-LogWrite-GetP3RPersonas
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/GetP3RPersonas-${Environment}:*
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
         - arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy
@@ -92,6 +102,27 @@ Resources:
       EndpointConfiguration: REGIONAL
       TracingEnabled: true
 
+  P3RPersonasTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "persona_3_reload_personas_${Environment}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: Arcana
+          AttributeType: S
+        - AttributeName: PersonaLevel
+          AttributeType: N
+      KeySchema:
+        - AttributeName: Arcana
+          KeyType: HASH
+        - AttributeName: PersonaLevel
+          KeyType: RANGE
+      ContributorInsightsSpecification:
+        Enabled: true
+      SSESpecification:
+        SSEEnabled: true
+        SSEType: KMS
+      TableClass: STANDARD
 Outputs:
   GetP3RPersonasApiUrl:
     Description: Invoke URL for /p3r-personas endpoint
