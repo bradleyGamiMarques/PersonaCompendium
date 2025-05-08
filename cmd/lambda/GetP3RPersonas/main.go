@@ -21,9 +21,14 @@ import (
 	GetPersonaServiceTypes "github.com/bradleyGamiMarques/get-persona-service-types"
 )
 
-type GroupedPersonas struct {
+type groupedPersonas struct {
 	Groups     map[string][]GetPersonaServiceTypes.P3RPersonaListItem
 	TotalCount int
+}
+
+type arcanaResult struct {
+	personas []GetPersonaServiceTypes.P3RPersonaListItem
+	arcana   string
 }
 
 var (
@@ -60,11 +65,11 @@ func initAWS(ctx context.Context) error {
 	return nil
 }
 
-func fetchPersonasByArcana(ctx context.Context, arcanas []string) GroupedPersonas {
-	grouped := make(map[string][]GetPersonaServiceTypes.P3RPersonaListItem, len(majorArcanaOrder))
-	var totalCount int
+func fetchPersonasByArcana(ctx context.Context, arcanas []string) groupedPersonas {
 
-	ch := make(chan []GetPersonaServiceTypes.P3RPersonaListItem, len(arcanas))
+	dataCh := make(chan arcanaResult, len(arcanas))
+	errCh := make(chan error, len(arcanas))
+
 	var wg sync.WaitGroup
 
 	for _, arcana := range arcanas {
@@ -84,43 +89,49 @@ func fetchPersonasByArcana(ctx context.Context, arcanas []string) GroupedPersona
 
 			result, err := svc.Query(ctx, input)
 			if err != nil {
-				log.Printf("Error querying arcana %s: %v", arcana, err)
-				ch <- nil
+				errCh <- fmt.Errorf("query error for arcana %s: %w", arcana, err)
 				return
 			}
 
 			var personas []GetPersonaServiceTypes.P3RPersonaListItem
 			if err := attributevalue.UnmarshalListOfMaps(result.Items, &personas); err != nil {
-				log.Printf("Error unmarshalling personas for arcana %s: %v", arcana, err)
-				ch <- nil
+				errCh <- fmt.Errorf("unmarshal error for arcana %s: %w", arcana, err)
 				return
 			}
 
-			ch <- personas
+			dataCh <- arcanaResult{
+				arcana:   arcana,
+				personas: personas,
+			}
 		}(arcana)
 	}
 
 	go func() {
 		wg.Wait()
-		close(ch)
+		close(dataCh)
+		close(errCh)
 	}()
 
-	for personas := range ch {
-		if personas != nil {
-			for _, persona := range personas {
-				grouped[persona.Arcana] = append(grouped[persona.Arcana], persona)
-				totalCount++
-			}
-		}
+	grouped := make(map[string][]GetPersonaServiceTypes.P3RPersonaListItem, len(majorArcanaOrder))
+	totalCount := 0
+
+	for result := range dataCh {
+		grouped[result.arcana] = append(grouped[result.arcana], result.personas...)
+		totalCount += len(result.personas)
 	}
 
-	return GroupedPersonas{
+	// Optional: log all errors
+	for err := range errCh {
+		log.Println("Fetch error:", err)
+	}
+
+	return groupedPersonas{
 		Groups:     grouped,
 		TotalCount: totalCount,
 	}
 }
 
-func flattenGroupedPersonas(data *GroupedPersonas) []GetPersonaServiceTypes.P3RPersonaListItem {
+func flattenGroupedPersonas(data *groupedPersonas) []GetPersonaServiceTypes.P3RPersonaListItem {
 	flattened := make([]GetPersonaServiceTypes.P3RPersonaListItem, 0, data.TotalCount)
 	for _, arcana := range majorArcanaOrder {
 		flattened = append(flattened, data.Groups[arcana]...)
