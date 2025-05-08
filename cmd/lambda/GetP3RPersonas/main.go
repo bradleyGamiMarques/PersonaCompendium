@@ -53,6 +53,7 @@ func initAWS(ctx context.Context) error {
 		return fmt.Errorf("failed to load configuration: %v", err)
 	}
 
+	// Add the AWS X-Ray instrumentation
 	awsv2.AWSV2Instrumentor((&cfg.APIOptions))
 
 	svc = dynamodb.NewFromConfig(cfg)
@@ -61,13 +62,10 @@ func initAWS(ctx context.Context) error {
 
 func fetchPersonasByArcana(ctx context.Context, arcanas []string) GroupedPersonas {
 	grouped := make(map[string][]GetPersonaServiceTypes.P3RPersonaListItem, len(majorArcanaOrder))
-	for _, arcana := range majorArcanaOrder {
-		grouped[arcana] = []GetPersonaServiceTypes.P3RPersonaListItem{}
-	}
-
 	var totalCount int
+
+	ch := make(chan []GetPersonaServiceTypes.P3RPersonaListItem, len(arcanas))
 	var wg sync.WaitGroup
-	var mu sync.Mutex
 
 	for _, arcana := range arcanas {
 		wg.Add(1)
@@ -87,34 +85,42 @@ func fetchPersonasByArcana(ctx context.Context, arcanas []string) GroupedPersona
 			result, err := svc.Query(ctx, input)
 			if err != nil {
 				log.Printf("Error querying arcana %s: %v", arcana, err)
+				ch <- nil
 				return
 			}
 
 			var personas []GetPersonaServiceTypes.P3RPersonaListItem
-			for _, item := range result.Items {
-				var persona GetPersonaServiceTypes.P3RPersonaListItem
-				if err := attributevalue.UnmarshalMap(item, &persona); err != nil {
-					log.Printf("Error unmarshalling persona for arcana %s: %v", arcana, err)
-					return
-				}
-				personas = append(personas, persona)
+			if err := attributevalue.UnmarshalListOfMaps(result.Items, &personas); err != nil {
+				log.Printf("Error unmarshalling personas for arcana %s: %v", arcana, err)
+				ch <- nil
+				return
 			}
 
-			mu.Lock()
-			grouped[arcana] = personas
-			totalCount += len(personas)
-			mu.Unlock()
+			ch <- personas
 		}(arcana)
 	}
 
-	wg.Wait()
+	go func() {
+		wg.Wait()
+		close(ch)
+	}()
+
+	for personas := range ch {
+		if personas != nil {
+			for _, persona := range personas {
+				grouped[persona.Arcana] = append(grouped[persona.Arcana], persona)
+				totalCount++
+			}
+		}
+	}
+
 	return GroupedPersonas{
 		Groups:     grouped,
 		TotalCount: totalCount,
 	}
 }
 
-func flattenGroupedPersonas(data GroupedPersonas) []GetPersonaServiceTypes.P3RPersonaListItem {
+func flattenGroupedPersonas(data *GroupedPersonas) []GetPersonaServiceTypes.P3RPersonaListItem {
 	flattened := make([]GetPersonaServiceTypes.P3RPersonaListItem, 0, data.TotalCount)
 	for _, arcana := range majorArcanaOrder {
 		flattened = append(flattened, data.Groups[arcana]...)
@@ -125,9 +131,11 @@ func flattenGroupedPersonas(data GroupedPersonas) []GetPersonaServiceTypes.P3RPe
 func Handle(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	ctx, seg := xray.BeginSubsegment(ctx, "GetP3RPersonas")
 	defer seg.Close(nil)
+
 	initOnce.Do(func() {
 		initError = initAWS(ctx)
 	})
+
 	if initError != nil {
 		log.Printf("Internal Server Error: %v", initError)
 		errorResponse := GetPersonaCompendiumErrors.InternalServerError("Something went wrong", request.Path)
@@ -148,7 +156,7 @@ func Handle(ctx context.Context, request events.APIGatewayProxyRequest) (events.
 	}
 
 	groupedData := fetchPersonasByArcana(ctx, inputBody.Arcanas)
-	orderedResponse := flattenGroupedPersonas(groupedData)
+	orderedResponse := flattenGroupedPersonas(&groupedData)
 
 	responseBody, err := json.Marshal(orderedResponse)
 	if err != nil {
