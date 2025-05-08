@@ -15,6 +15,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/aws/aws-xray-sdk-go/instrumentation/awsv2"
+	"github.com/aws/aws-xray-sdk-go/xray"
 	GetPersonaCompendiumErrors "github.com/bradleyGamiMarques/PersonaCompendiumErrors"
 	GetPersonaServiceTypes "github.com/bradleyGamiMarques/get-persona-service-types"
 )
@@ -50,6 +52,8 @@ func initAWS(ctx context.Context) error {
 		log.Printf("Internal Server Error: failed to load configuration: %v\n", err)
 		return fmt.Errorf("failed to load configuration: %v", err)
 	}
+
+	awsv2.AWSV2Instrumentor((&cfg.APIOptions))
 
 	svc = dynamodb.NewFromConfig(cfg)
 	return nil
@@ -119,6 +123,8 @@ func flattenGroupedPersonas(data GroupedPersonas) []GetPersonaServiceTypes.P3RPe
 }
 
 func Handle(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	ctx, seg := xray.BeginSubsegment(ctx, "GetP3RPersonas")
+	defer seg.Close(nil)
 	initOnce.Do(func() {
 		initError = initAWS(ctx)
 	})
